@@ -1,3 +1,5 @@
+
+##libraries
 import network
 import time
 import os
@@ -15,8 +17,11 @@ import math
 import urequests
 from machine import UART
 
+##Inicia UART
 uart1 = UART(1, 9600)                         
 uart1 = UART(1, baudrate=9600, tx=17, rx=16)
+
+##Define variaveis
 log_number = None
 atm_pressure = None
 temperature_reading = None
@@ -35,6 +40,7 @@ file_data = None
 file_name = None
 arquivo = None
 
+##Inicia sensores
 def sht20_temperature():
 	i2c.writeto(0x40,b'\xf3')
 	time.sleep_ms(70)
@@ -61,11 +67,12 @@ adc34.atten(ADC.ATTN_11DB)
 adc34.width(ADC.WIDTH_12BIT)
 
 
-
+##Inicia setup (wifi, SD e sensores)
 print('hello world, starting setup')
 sta_if = network.WLAN(network.STA_IF); sta_if.active(True)
 sta_if.scan()
-sta_if.connect('Arrow','arqueira1972')
+#mudar antes de rodar
+sta_if.connect('rede de wifi','senha')
 print("Waiting for Wifi connection")
 while not sta_if.isconnected(): time.sleep(1)
 print("Connected")
@@ -90,9 +97,12 @@ sCCS811 = CCS811.CCS811(i2c=bus, addr=90)
 print('end of setup')
 print(sta_if.ifconfig())
 log_number = 1
+
+##Loop principal
 while True:
   print('log number' + str(log_number))
 
+  ##medidas dos sensores
   bmp280.normal_measure()
   atm_pressure = (bmp280.pressure) / 101325
   temperature_reading = bmp280.temperature
@@ -102,16 +112,22 @@ while True:
   battery = adc35.read()
   uv = adc34.read()
   altitude = bmp180.altitude
-  cam = uart1.read(32)
+
+  ##le os dados da camera
+  cam = uart1.read(3200)
   if cam == None:
     cam_status = 0
   else:
     cam_status = 1
+
+  #converte bateria pra %
   battery_percentage = round((battery * 100) / 2600)
  
-
+  ##junta os dados em JSON
   http_data = ''.join([str(x3) for x3 in ['{', '"equipe":' + str(123), ', "bateria":' + str(battery_percentage), ', "temperatura":' + str(temperature_reading), ', "pressao":' + str(atm_pressure), ', "giroscopio":', mpu9250s.gyro, ', "acelerometro":', mpu9250s.acceleration, ', "payload":', ''.join([str(x2) for x2 in ['{', '"dados climatologicos":', ''.join([str(x) for x in ['{', '"altitude":' + str(altitude),  ', "co2":' + str(co2), '}']]), ', "cam_status":' + str(cam_status), '}']]), '}']])
   time.sleep(1)
+  
+  ##tenta enviar por POST, se houver erro procede e avisa
   try:
     HTTP_request = urequests.post('https://putsreq.com/T8ueVaCJxjc9v2vVmHMY', json=http_data)
   except OSError as e:
@@ -121,7 +137,7 @@ while True:
         print("Unexpected OSError:", e)
   time.sleep(1)
   
- 
+  ##Junta os dados enviados com a camera, nomeia um arquivo e escreve os dados
   file_data = ''.join([str(x) for x in ['{{"http_data":', http_data, '},"cam_data":', str(cam), '}']])
   file_name = ''.join([str(x4) for x4 in ['/sd/log_vac_test', str(log_number), '.csv']])
   arquivo = open(file_name, 'bw')
@@ -130,9 +146,12 @@ while True:
   arquivo.close()
   print('recorder on sd ')
   print(http_data)
+
+  ##Envia os dados por radio
   uart1.write(str(http_data))
   log_number = (log_number if isinstance(log_number, int) else 0) + 1
   print('end of transmission')
   print('   ')
 
+  ##espera o tempo necessario
   time.sleep(180)
