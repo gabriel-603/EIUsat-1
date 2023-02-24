@@ -1,3 +1,6 @@
+//Codigos. usado para teste da antena
+
+
 #include <SoftwareSerial.h>
 
 // Set up a software serial port for communication with the H-12 radio chip
