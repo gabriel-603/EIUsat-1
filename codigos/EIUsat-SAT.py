@@ -21,6 +21,12 @@ from machine import UART
 uart1 = UART(1, 9600)                         
 uart1 = UART(1, baudrate=9600, tx=17, rx=16)
 
+
+
+rede_wifi = "REDE AQUI"
+senha_wifi = "SENHA AQUI"
+servidor_url = "https://putsreq.com/T8ueVaCJxjc9v2vVmHMY"
+
 ##Define variaveis
 log_number = None
 atm_pressure = None
@@ -72,7 +78,7 @@ print('hello world, starting setup')
 sta_if = network.WLAN(network.STA_IF); sta_if.active(True)
 sta_if.scan()
 #mudar antes de rodar
-sta_if.connect('rede de wifi','senha')
+sta_if.connect(rede_wifi,senha_wifi)
 print("Waiting for Wifi connection")
 while not sta_if.isconnected(): time.sleep(1)
 print("Connected")
@@ -129,7 +135,7 @@ while True:
   
   ##tenta enviar por POST, se houver erro procede e avisa
   try:
-    HTTP_request = urequests.post('https://putsreq.com/T8ueVaCJxjc9v2vVmHMY', json=http_data)
+    HTTP_request = urequests.post(servidor_url, json=http_data)
   except OSError as e:
     if e.errno == 12:
         print("Error: Not enough memory")
