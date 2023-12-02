@@ -1,3 +1,9 @@
+## CODIGO PARA CIRAR ACCESS POINT:
+# import network
+# ap = network.WLAN(network.AP_IF)
+# ap.active(True)
+# ap.config(essid='REDE', password='SENHA')
+
 
 ##libraries
 import network
@@ -6,7 +12,6 @@ import os
 import machine
 from machine import Pin
 from machine import I2C, Pin
-import time
 from bmp280 import *
 from mpu9250 import MPU9250
 from bmp180 import BMP180
@@ -16,16 +21,15 @@ from machine import ADC
 import math
 import urequests
 from machine import UART
+import gc
+import ujson
+
+## Enable the garbage collector
+gc.enable()
 
 ##Inicia UART
-uart1 = UART(1, 9600)                         
+uart1 = UART(1, 9600)
 uart1 = UART(1, baudrate=9600, tx=17, rx=16)
-
-
-
-rede_wifi = "REDE AQUI"
-senha_wifi = "SENHA AQUI"
-servidor_url = "https://putsreq.com/T8ueVaCJxjc9v2vVmHMY"
 
 ##Define variaveis
 log_number = None
@@ -46,118 +50,166 @@ file_data = None
 file_name = None
 arquivo = None
 
+
 ##Inicia sensores
 def sht20_temperature():
-	i2c.writeto(0x40,b'\xf3')
-	time.sleep_ms(70)
-	t=i2c.readfrom(0x40, 2)
-	return -46.86+175.72*(t[0]*256+t[1])/65535
+    i2c.writeto(0x40, b'\xf3')
+    time.sleep_ms(70)
+    t = i2c.readfrom(0x40, 2)
+    return -46.86 + 175.72 * (t[0] * 256 + t[1]) / 65535
+
 
 def sht20_humidity():
-	i2c.writeto(0x40,b'\xf5')
-	time.sleep_ms(70)
-	t=i2c.readfrom(0x40, 2)
-	return -6+125*(t[0]*256+t[1])/65535
-
-sta_if = network.WLAN(network.STA_IF)
-
-sta_if.active(True)
+    i2c.writeto(0x40, b'\xf5')
+    time.sleep_ms(70)
+    t = i2c.readfrom(0x40, 2)
+    return -6 + 125 * (t[0] * 256 + t[1]) / 65535
 
 
-adc35=ADC(Pin(35))
+adc35 = ADC(Pin(35))
 adc35.atten(ADC.ATTN_11DB)
 adc35.width(ADC.WIDTH_12BIT)
 
-adc34=ADC(Pin(34))
-adc34.atten(ADC.ATTN_11DB)
-adc34.width(ADC.WIDTH_12BIT)
-
-
 ##Inicia setup (wifi, SD e sensores)
-print('hello world, starting setup')
-sta_if = network.WLAN(network.STA_IF); sta_if.active(True)
-sta_if.scan()
-#mudar antes de rodar
-sta_if.connect(rede_wifi,senha_wifi)
-print("Waiting for Wifi connection")
-while not sta_if.isconnected(): time.sleep(1)
-print("Connected")
-sdcard=machine.SDCard(slot=2, width=1, cd=None, wp=None, sck=Pin(18), miso=Pin(19), mosi=Pin(23), cs=Pin(15), freq=20000000)
+print('hello world, starting setup!')
+# mudar antes de rodar
+sdcard = machine.SDCard(slot=2, width=1, cd=None, wp=None, sck=Pin(18), miso=Pin(19), mosi=Pin(23), cs=Pin(15),
+                        freq=20000000)
 os.mount(sdcard, '/sd')
 time.sleep(1)
-i2c=I2C(scl=Pin(22), sda=Pin(21))
-bus=I2C(scl=Pin(22), sda=Pin(21))
+i2c = I2C(scl=Pin(22), sda=Pin(21))
+bus = I2C(scl=Pin(22), sda=Pin(21))
 bmp280 = BMP280(bus)
 bmp280.use_case(BMP280_CASE_WEATHER)
 bmp280.oversample(BMP280_OS_HIGH)
-i2c=I2C(scl=Pin(22), sda=Pin(21))
+i2c = I2C(scl=Pin(22), sda=Pin(21))
 mpu9250s = MPU9250(i2c)
-bus=I2C(scl=Pin(5), sda=Pin(4), freq=100000)
+bus = I2C(scl=Pin(5), sda=Pin(4), freq=100000)
 bmp180 = BMP180(bus)
 bmp180.oversample_sett = 2
 bmp180.baseline = 101325
 
-bus=I2C(scl=Pin(22), sda=Pin(21))
+bus = I2C(scl=Pin(22), sda=Pin(21))
 sCCS811 = CCS811.CCS811(i2c=bus, addr=90)
 
 print('end of setup')
-print(sta_if.ifconfig())
-log_number = 1
 
-##Loop principal
-while True:
-  print('log number' + str(log_number))
 
-  ##medidas dos sensores
-  bmp280.normal_measure()
-  atm_pressure = (bmp280.pressure) / 101325
-  temperature_reading = bmp280.temperature
-  co2 = sCCS811.eCO2
-  gyro_data = 'gyro rate:' + str(mpu9250s.gyro)
-  aceleration_data = 'accerelation rate:' + str(mpu9250s.acceleration)
-  battery = adc35.read()
-  uv = adc34.read()
-  altitude = bmp180.altitude
-
-  ##le os dados da camera
-  cam = uart1.read(3200)
-  if cam == None:
-    cam_status = 0
-  else:
-    cam_status = 1
-
-  #converte bateria pra %
-  battery_percentage = round((battery * 100) / 2600)
- 
-  ##junta os dados em JSON
-  http_data = ''.join([str(x3) for x3 in ['{', '"equipe":' + str(123), ', "bateria":' + str(battery_percentage), ', "temperatura":' + str(temperature_reading), ', "pressao":' + str(atm_pressure), ', "giroscopio":', mpu9250s.gyro, ', "acelerometro":', mpu9250s.acceleration, ', "payload":', ''.join([str(x2) for x2 in ['{', '"dados climatologicos":', ''.join([str(x) for x in ['{', '"altitude":' + str(altitude),  ', "co2":' + str(co2), '}']]), ', "cam_status":' + str(cam_status), '}']]), '}']])
-  time.sleep(1)
-  
-  ##tenta enviar por POST, se houver erro procede e avisa
-  try:
-    HTTP_request = urequests.post(servidor_url, json=http_data)
-  except OSError as e:
-    if e.errno == 12:
+def send_data_in_chunks(data):
+    chunk_size = 1024  # Adjust the chunk size based on available memory
+    data_str = ujson.dumps(data)
+    try:
+        i = 0
+        while i < len(data_str):
+            chunk = data_str[i:i + chunk_size]
+            uart1.write(str(chunk))
+            i += len(chunk)
+    except MemoryError:
         print("Error: Not enough memory")
-    else:
+    except OSError as e:
         print("Unexpected OSError:", e)
-  time.sleep(1)
-  
-  ##Junta os dados enviados com a camera, nomeia um arquivo e escreve os dados
-  file_data = ''.join([str(x) for x in ['{{"http_data":', http_data, '},"cam_data":', str(cam), '}']])
-  file_name = ''.join([str(x4) for x4 in ['/sd/log_vac_test', str(log_number), '.csv']])
-  arquivo = open(file_name, 'bw')
 
-  arquivo.write(file_data)
-  arquivo.close()
-  print('recorder on sd ')
-  print(http_data)
 
-  ##Envia os dados por radio
-  uart1.write(str(http_data))
-  log_number = (log_number if isinstance(log_number, int) else 0) + 1
-  print('end of transmission')
-  print('   ')
+def read_data_in_chunks(max_to_read, chunk_size):
+    read_data = ''
+    try:
+        i = 0
+        while i < max_to_read:
+            chunk = uart1.read(chunk_size)
+            read_data = str(read_data) + str(chunk)
+            i += chunk_size
+        return read_data
+    except MemoryError:
+        print("Error: Not enough memory")
+    except OSError as e:
+        print("Unexpected OSError:", e)
 
-  ##espera o tempo necessario
-  time.sleep(180)
+
+# Main loop
+def main():
+    log_number = 1
+    while log_number != 0:
+        print('log number' + str(log_number))
+
+        ##medidas dos sensores
+        bmp280.normal_measure()
+        atm_pressure = (bmp280.pressure) * 2 / 101325
+        temperature_reading = sht20_temperature()
+        co2 = sCCS811.eCO2
+        gyro_data = 'gyro rate:' + str(mpu9250s.gyro)
+        aceleration_data = 'accerelation rate:' + str(mpu9250s.acceleration)
+        battery = adc35.read()
+        altitude = bmp180.altitude
+
+        ##le os dados da camera
+        try:
+            cam = read_data_in_chunks(100000, 25000)
+
+        ##if cam == None:
+        # cam_status = 0
+        # else:
+        # cam_status = 1
+        except MemoryError:
+            print('ME, failed to read')
+            cam_status = 2
+        except OSError as e:
+            print('Unkown error, failed to read')
+            cacm_status = 3
+        if cam != 'NoneNoneNoneNone':
+            cam_status = 0
+        else:
+            cam_status = 1
+
+        # converte bateria pra %
+        battery_percentage = round((battery * 100) / 2600)
+        # Construct JSON data
+        http_data = {
+            "equipe": 123,
+            "bateria": battery_percentage,
+            "temperatura": temperature_reading,
+            "pressao": atm_pressure,
+            "giroscopio": gyro_data,
+            "acelerometro": aceleration_data,
+            "payload": {
+                "dados climatologicos": {
+                    "altitude": altitude,
+                    "co2": co2
+                },
+                "cam_status": cam_status
+            }
+        }
+
+        # Try to send data via POST request, handle memory errors
+
+        # Combine data for the SD card and write to a file
+        file_data = '{{"http_data":{}, "cam_data":{}}}'.format(http_data, cam)
+        file_name = '/sd/log_vac_test{}.csv'.format(log_number)
+        with open(file_name, 'bw') as arquivo:
+            arquivo.write(file_data)
+        arquivo.close()
+        print('Recorder on SD')
+        print(file_data)
+
+        # Send data via UART
+        send_data_in_chunks(http_data)
+        log_number += 1
+        print('End of transmission\n')
+
+        # Wait for the specified time
+        time.sleep(9.5)
+
+
+for i in range(0, 150):
+    print(f'reading #{i}')
+    initial_reading = uart1.read(200)
+    if initial_reading != None:
+        print('found cam')
+        time.sleep(9.3)
+        main()
+    else:
+        i += 1
+    time.sleep(0.2)
+    if i == 150:
+        print('starting anyway, failed to read camera')
+        main()
+
