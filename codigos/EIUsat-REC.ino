@@ -1,6 +1,3 @@
-//Codigos. usado para teste da antena
-
-
 #include <SoftwareSerial.h>
 
 // Set up a software serial port for communication with the H-12 radio chip
@@ -12,26 +9,30 @@ void setup() {
 
   // Initialize serial communication at 9600 baud rate
   Serial.begin(9600);
-
 }
-  String group_data;
+
+String receivedMessage = "";
+
+// Function to perform a software reset
 
 void loop() {
-  // Check if there is data available to read from the H-12 radio chip
-  
-  if (group_data.length()==260){
-      group_data="";
-  }
-   
-  if (h12Serial.available()) {
-    // Read a byte of data from the H-12 radio chip
-    char data = h12Serial.read();
+ // Check if there is data available to read from the H-12 radio chip
+  while (h12Serial.available()) {
+    // Read a chunk of data from the H-12 radio chip
+    char chunk[32]; // Adjust the chunk size as needed
+    int bytesRead = h12Serial.readBytes(chunk, sizeof(chunk));
+    chunk[bytesRead] = '\0'; // Null-terminate the chunk
 
-  
+    // Concatenate the chunk to the received message
+    receivedMessage += chunk;
 
-    // Print the data to the serial monitor as an ASCII character
+    // Process the received message if it's complete
+    if (receivedMessage.endsWith("}")) {
+      Serial.print("Received Message: ");
+      Serial.println(receivedMessage);
 
-    group_data=group_data+data;
-    Serial.println(group_data);
+      // Clear the message buffer for the next message
+      receivedMessage = "";
+    }
   }
 }
