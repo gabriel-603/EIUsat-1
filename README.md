@@ -11,9 +11,10 @@ Relatório do LARS-UFSC dos testes realizados
 
 
 **MIT Portfolio Submission Update:**
+
 This repo contains several files developed during the Brazilian Satellite Olympiad, a competition where students design and build nanosatellites. 
-The nanosatellite designed by my team, a CanSat, was made do detect wildfires using and AI vision model we trained.
-This repo contains part of the code for the CanSat, including the atmospheric sensors, antenna and camera, alongside part of the code for the antenna receptor
+The nanosatellite designed by my team, a CanSat, was made do detect wildfires using an AI vision model we trained.
+This repo contains some of the code for the CanSat, including the atmospheric sensors, antenna and camera, alongside part of the code for the antenna receptor. These are not the final versions, as during the final days of the competitions and in the hours prior to the lauch, following instructions from the competition's organizers, some parameters were changed. The code should be seen as a general idea of how everything worked, but not exactly what flew in the suborbital rocket.
 
 This repo also contains data collected in our first test flight on a stratospheric ballon, technical drawings for the structure and a report compiled with the help of some PhD students from UFSC (Universidade Federal de Santa Catarina) regarding some tests we performed in their lab, including vacuum chamber and temperature tests.
 This repo also contains the report developed and sent to the event organizers prior to the National Stage, detailing the Nanosatellite's contruction, tests performed code, etc. 
