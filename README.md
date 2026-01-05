@@ -19,5 +19,5 @@ This repo also contains data collected in our first test flight on a stratospher
 This repo also contains the report developed and sent to the event organizers prior to the National Stage, detailing the Nanosatellite's contruction, tests performed code, etc. 
 Since it was developed for the Brazilian Satellite Olympiad, most of the contents are in English
 
-More information about the competition and its requirements can be found (here)[https://github.com/OBSAT-MCTI/OBSAT-MCTI/blob/main/editais/1a_OBSAT/Edital_Fase_4_1a_OBSAT_MCTI.pdf]
+More information about the competition and its requirements can be found [here](https://github.com/OBSAT-MCTI/OBSAT-MCTI/blob/main/editais/1a_OBSAT/Edital_Fase_4_1a_OBSAT_MCTI.pdf)
 
