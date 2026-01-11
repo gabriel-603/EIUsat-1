@@ -10,7 +10,7 @@ Relatório do LARS-UFSC dos testes realizados
 
 
 
-**MIT Portfolio Submission Update:**
+**University Portfolio Submission Update:**
 
 This repo contains several files developed during the Brazilian Satellite Olympiad, a competition where students design and build nanosatellites. 
 The nanosatellite designed by my team, a CanSat, was made do detect wildfires using an AI vision model we trained.
